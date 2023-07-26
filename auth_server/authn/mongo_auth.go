@@ -46,7 +46,7 @@ type MongoAuth struct {
 
 type authUserEntry struct {
 	Username *string    `yaml:"username,omitempty" json:"username,omitempty"`
-	Password *string    `yaml:"password,omitempty" json:"password,omitempty"`
+	Password *string    `yaml:"password,omitempty" json:"password,omitempty"` // TODO : support multiple passwords per user
 	Labels   api.Labels `yaml:"labels,omitempty" json:"labels,omitempty"`
 }
 
@@ -102,8 +102,7 @@ func (mauth *MongoAuth) authenticate(account string, password api.PasswordString
 	var dbUserRecord authUserEntry
 	collection := mauth.session.Database(mauth.config.MongoConfig.DialInfo.Database).Collection(mauth.config.Collection)
 
-
-        filter := bson.D{{"username", account}}
+	filter := bson.D{{"username", account}}
 	err := collection.FindOne(context.TODO(), filter).Decode(&dbUserRecord)
 
 	// If we connect and get no results we return a NoMatch so auth can fall-through
@@ -114,6 +113,7 @@ func (mauth *MongoAuth) authenticate(account string, password api.PasswordString
 	}
 
 	// Validate db password against passed password
+	// TODO : support one user with multiple passwords
 	if dbUserRecord.Password != nil {
 		if bcrypt.CompareHashAndPassword([]byte(*dbUserRecord.Password), []byte(password)) != nil {
 			return false, nil, nil
